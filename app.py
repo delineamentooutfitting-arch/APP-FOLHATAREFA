@@ -1,19 +1,24 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 
 st.set_page_config(
-    page_title="Registro de Avanço",
+    page_title="P84 – Processamento",
     layout="wide"
 )
 
-st.title("📋 Registro de Avanço de Fabricação")
+st.title("📋 P84 – Registro de Avanço | PROCESSAMENTO")
 
-# ===== CARREGAR PLANILHA =====
-arquivo = "atividades.xlsx"
-df = pd.read_excel(arquivo)
+# =========================
+# ARQUIVO E ABA
+# =========================
+arquivo = "P84 - FOLHA TAREFA.xlsx"
+aba = "FOLHA TAREFA PROCESSAMENTO"
 
-# ===== COLUNAS QUE SERÃO EXIBIDAS =====
+df = pd.read_excel(arquivo, sheet_name=aba)
+
+# =========================
+# COLUNAS EXIBIDAS
+# =========================
 colunas_exibidas = [
     "MÓDULO",
     "DESENHO",
@@ -22,7 +27,7 @@ colunas_exibidas = [
     "DESCRIÇÃO DO PRODUTO",
     "NOME DO PRODUTO",
     "TAG",
-    "TAG-CONTROLSTRUI",
+    "TAG-CONTROLSTRU",
     "Prog %",
     "Peso atividade",
     "REALIZADO",
@@ -31,29 +36,32 @@ colunas_exibidas = [
 
 df = df[colunas_exibidas]
 
-# ===== BUSCA NAS 8 PRIMEIRAS COLUNAS =====
-st.subheader("🔍 Filtro de informações")
+# =========================
+# FILTRO / BUSCA (A–H)
+# =========================
+st.subheader("🔎 Filtro")
 
 busca = st.text_input(
-    "Buscar por Módulo, Desenho, TAG, Produto, etc."
+    "Buscar por módulo, desenho, produto, TAG, etc."
 )
 
 if busca:
-    filtro = df[
+    filtro = (
         df.iloc[:, 0:8]
         .astype(str)
-        .apply(
-            lambda x: x.str.contains(busca, case=False, na=False)
-        ).any(axis=1)
-    ]
+        .apply(lambda col: col.str.contains(busca, case=False, na=False))
+        .any(axis=1)
+    )
     df_filtrado = df[filtro]
 else:
     df_filtrado = df
 
 st.divider()
 
-# ===== TABELA EDITÁVEL =====
-st.subheader("✍️ Registro de Realizado e Observações")
+# =========================
+# TABELA EDITÁVEL
+# =========================
+st.subheader("✍️ Atualização de Progresso")
 
 df_editado = st.data_editor(
     df_filtrado,
@@ -76,11 +84,14 @@ df_editado = st.data_editor(
     ]
 )
 
-# ===== SALVAR =====
+# =========================
+# SALVAR
+# =========================
 if st.button("💾 Salvar alterações"):
     for idx in df_editado.index:
         df.loc[idx, "REALIZADO"] = df_editado.loc[idx, "REALIZADO"]
         df.loc[idx, "ATIVIDADES / OBSERVAÇÕES"] = df_editado.loc[idx, "ATIVIDADES / OBSERVAÇÕES"]
 
     df.to_excel(arquivo, index=False)
-    st.success("✅ Informações salvas com sucesso!")
+    st.success("✅ Atualizações salvas com sucesso!")
+``
