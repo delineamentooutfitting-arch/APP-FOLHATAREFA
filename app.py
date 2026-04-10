@@ -1,11 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(
-    page_title="P84 – Processamento",
-    layout="wide"
-)
-
+st.set_page_config(page_title="P84 – Processamento", layout="wide")
 st.title("📋 P84 – Registro de Avanço | PROCESSAMENTO")
 
 # =========================
@@ -19,7 +15,7 @@ df_original = pd.read_excel(arquivo, sheet_name=aba)
 # =========================
 # COLUNAS BASE
 # =========================
-colunas_base = [
+colunas = [
     "MÓDULO",
     "DESENHO",
     "REVISÃO",
@@ -34,45 +30,44 @@ colunas_base = [
     "ATIVIDADES / OBSERVAÇÕES"
 ]
 
-df = df_original[colunas_base].copy()
+df = df_original[colunas].copy()
 
 # =========================
-# NORMALIZAÇÃO DE TIPOS
+# NORMALIZAÇÃO
 # =========================
 df["Prog %"] = pd.to_numeric(df["Prog %"], errors="coerce").fillna(0)
 df["REALIZADO"] = pd.to_numeric(df["REALIZADO"], errors="coerce").fillna(0)
 df["ATIVIDADES / OBSERVAÇÕES"] = df["ATIVIDADES / OBSERVAÇÕES"].fillna("").astype(str)
 
 # =========================
-# COLUNA RESTANTE (%)
+# COLUNAS DE EXIBIÇÃO
 # =========================
-df["RESTANTE (%)"] = (df["Prog %"] * 100) - df["REALIZADO"]
-df["RESTANTE (%)"] = df["RESTANTE (%)"].clip(lower=0)
+df["PROG (%)"] = df["Prog %"] * 100
+df["RESTANTE (%)"] = (df["PROG (%)"] - df["REALIZADO"]).clip(lower=0)
 
 # =========================
 # FILTRO
 # =========================
 st.subheader("🔎 Filtro")
-
 busca = st.text_input("Buscar por módulo, desenho, produto, TAG, etc.")
 
 if busca:
-    mascara = (
+    mask = (
         df.iloc[:, 0:8]
         .astype(str)
         .apply(lambda col: col.str.contains(busca, case=False, na=False))
         .any(axis=1)
     )
-    df_filtrado = df[mascara].copy()
+    df_filtrado = df[mask].copy()
 else:
     df_filtrado = df.copy()
 
 st.divider()
 
 # =========================
-# ORDEM FINAL DAS COLUNAS
+# TABELA
 # =========================
-colunas_finais = [
+colunas_view = [
     "MÓDULO",
     "DESENHO",
     "REVISÃO",
@@ -81,47 +76,39 @@ colunas_finais = [
     "NOME DO PRODUTO",
     "TAG",
     "TAG-CONTROLSTRU",
-    "Prog %",
+    "PROG (%)",
     "Peso atividade",
     "REALIZADO",
     "RESTANTE (%)",
     "ATIVIDADES / OBSERVAÇÕES"
 ]
 
-df_filtrado = df_filtrado[colunas_finais]
-
-# =========================
-# TABELA EDITÁVEL
-# =========================
-st.subheader("✍️ Atualizar Realizado e Observações")
+df_filtrado = df_filtrado[colunas_view]
 
 df_editado = st.data_editor(
     df_filtrado,
     use_container_width=True,
     num_rows="fixed",
     column_config={
-        "Prog %": st.column_config.NumberColumn(
-            "Prog %",
-            format="%.0f%%"
-        ),
+        "PROG (%)": st.column_config.NumberColumn("Prog %", format="%.0f%%"),
         "REALIZADO": st.column_config.NumberColumn(
             "REALIZADO (%)",
             min_value=0,
             max_value=100,
-            step=5
+            step=5,
         ),
         "RESTANTE (%)": st.column_config.NumberColumn(
             "RESTANTE (%)",
-            format="%.0f%%"
+            format="%.0f%%",
         ),
         "ATIVIDADES / OBSERVAÇÕES": st.column_config.TextColumn(
             "ATIVIDADES / OBSERVAÇÕES"
-        )
+        ),
     },
     disabled=[
-        col for col in df_filtrado.columns
+        col for col in colunas_view
         if col not in ["REALIZADO", "ATIVIDADES / OBSERVAÇÕES"]
-    ]
+    ],
 )
 
 # =========================
@@ -136,3 +123,4 @@ if st.button("💾 Salvar alterações"):
 
     df_original.to_excel(arquivo, index=False)
     st.success("✅ Atualizações salvas com sucesso!")
+``
