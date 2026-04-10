@@ -8,14 +8,17 @@ st.set_page_config(
 
 st.title("📋 P84 – Registro de Avanço | PROCESSAMENTO")
 
-# ===== Arquivo e aba =====
+# =========================
+# ARQUIVO / ABA
+# =========================
 arquivo = "P84 - FOLHA TAREFA.xlsx"
 aba = "FOLHA TAREFA PROCESSAMENTO"
 
-# Ler planilha
 df_original = pd.read_excel(arquivo, sheet_name=aba)
 
-# ===== Colunas exibidas =====
+# =========================
+# COLUNAS USADAS
+# =========================
 colunas_exibidas = [
     "MÓDULO",
     "DESENHO",
@@ -33,7 +36,23 @@ colunas_exibidas = [
 
 df = df_original[colunas_exibidas].copy()
 
-# ===== Filtro =====
+# =========================
+# NORMALIZAÇÃO DE TIPOS (🔥 PARTE CRÍTICA)
+# =========================
+df["REALIZADO"] = (
+    pd.to_numeric(df["REALIZADO"], errors="coerce")
+    .fillna(0)
+)
+
+df["ATIVIDADES / OBSERVAÇÕES"] = (
+    df["ATIVIDADES / OBSERVAÇÕES"]
+    .fillna("")
+    .astype(str)
+)
+
+# =========================
+# FILTRO
+# =========================
 st.subheader("🔎 Filtro")
 
 busca = st.text_input(
@@ -53,7 +72,9 @@ else:
 
 st.divider()
 
-# ===== Tabela editável =====
+# =========================
+# TABELA EDITÁVEL
+# =========================
 st.subheader("✍️ Atualizar Realizado e Observações")
 
 df_editado = st.data_editor(
@@ -77,12 +98,13 @@ df_editado = st.data_editor(
     ]
 )
 
-# ===== Salvar =====
+# =========================
+# SALVAR
+# =========================
 if st.button("💾 Salvar alterações"):
     for idx in df_editado.index:
         df_original.loc[idx, "REALIZADO"] = df_editado.loc[idx, "REALIZADO"]
         df_original.loc[idx, "ATIVIDADES / OBSERVAÇÕES"] = df_editado.loc[idx, "ATIVIDADES / OBSERVAÇÕES"]
 
     df_original.to_excel(arquivo, index=False)
-
     st.success("✅ Atualizações salvas com sucesso!")
