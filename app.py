@@ -17,9 +17,9 @@ aba = "FOLHA TAREFA PROCESSAMENTO"
 df_original = pd.read_excel(arquivo, sheet_name=aba)
 
 # =========================
-# COLUNAS USADAS
+# COLUNAS BASE
 # =========================
-colunas_exibidas = [
+colunas_base = [
     "MÓDULO",
     "DESENHO",
     "REVISÃO",
@@ -34,30 +34,27 @@ colunas_exibidas = [
     "ATIVIDADES / OBSERVAÇÕES"
 ]
 
-df = df_original[colunas_exibidas].copy()
+df = df_original[colunas_base].copy()
 
 # =========================
-# NORMALIZAÇÃO DE TIPOS (🔥 PARTE CRÍTICA)
+# NORMALIZAÇÃO DE TIPOS
 # =========================
-df["REALIZADO"] = (
-    pd.to_numeric(df["REALIZADO"], errors="coerce")
-    .fillna(0)
-)
+df["Prog %"] = pd.to_numeric(df["Prog %"], errors="coerce").fillna(0)
+df["REALIZADO"] = pd.to_numeric(df["REALIZADO"], errors="coerce").fillna(0)
+df["ATIVIDADES / OBSERVAÇÕES"] = df["ATIVIDADES / OBSERVAÇÕES"].fillna("").astype(str)
 
-df["ATIVIDADES / OBSERVAÇÕES"] = (
-    df["ATIVIDADES / OBSERVAÇÕES"]
-    .fillna("")
-    .astype(str)
-)
+# =========================
+# COLUNA RESTANTE (%)
+# =========================
+df["RESTANTE (%)"] = (df["Prog %"] * 100) - df["REALIZADO"]
+df["RESTANTE (%)"] = df["RESTANTE (%)"].clip(lower=0)
 
 # =========================
 # FILTRO
 # =========================
 st.subheader("🔎 Filtro")
 
-busca = st.text_input(
-    "Buscar por módulo, desenho, produto, TAG, etc."
-)
+busca = st.text_input("Buscar por módulo, desenho, produto, TAG, etc.")
 
 if busca:
     mascara = (
@@ -73,6 +70,27 @@ else:
 st.divider()
 
 # =========================
+# ORDEM FINAL DAS COLUNAS
+# =========================
+colunas_finais = [
+    "MÓDULO",
+    "DESENHO",
+    "REVISÃO",
+    "ELEVAÇÃO",
+    "DESCRIÇÃO DO PRODUTO",
+    "NOME DO PRODUTO",
+    "TAG",
+    "TAG-CONTROLSTRU",
+    "Prog %",
+    "Peso atividade",
+    "REALIZADO",
+    "RESTANTE (%)",
+    "ATIVIDADES / OBSERVAÇÕES"
+]
+
+df_filtrado = df_filtrado[colunas_finais]
+
+# =========================
 # TABELA EDITÁVEL
 # =========================
 st.subheader("✍️ Atualizar Realizado e Observações")
@@ -82,11 +100,19 @@ df_editado = st.data_editor(
     use_container_width=True,
     num_rows="fixed",
     column_config={
+        "Prog %": st.column_config.NumberColumn(
+            "Prog %",
+            format="%.0f%%"
+        ),
         "REALIZADO": st.column_config.NumberColumn(
             "REALIZADO (%)",
             min_value=0,
             max_value=100,
             step=5
+        ),
+        "RESTANTE (%)": st.column_config.NumberColumn(
+            "RESTANTE (%)",
+            format="%.0f%%"
         ),
         "ATIVIDADES / OBSERVAÇÕES": st.column_config.TextColumn(
             "ATIVIDADES / OBSERVAÇÕES"
@@ -104,7 +130,9 @@ df_editado = st.data_editor(
 if st.button("💾 Salvar alterações"):
     for idx in df_editado.index:
         df_original.loc[idx, "REALIZADO"] = df_editado.loc[idx, "REALIZADO"]
-        df_original.loc[idx, "ATIVIDADES / OBSERVAÇÕES"] = df_editado.loc[idx, "ATIVIDADES / OBSERVAÇÕES"]
+        df_original.loc[idx, "ATIVIDADES / OBSERVAÇÕES"] = df_editado.loc[
+            idx, "ATIVIDADES / OBSERVAÇÕES"
+        ]
 
     df_original.to_excel(arquivo, index=False)
     st.success("✅ Atualizações salvas com sucesso!")
