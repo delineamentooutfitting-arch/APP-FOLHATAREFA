@@ -136,14 +136,31 @@ df_editado = st.data_editor(
 )
 
 # =========================
-# SALVAR NO EXCEL (CORRETO)
+# SALVAR NO EXCEL (VERSÃO DEFINITIVA)
 # =========================
 if st.button("💾 Salvar alterações"):
 
-    df_original.loc[df_editado.index, "REALIZADO"] = df_editado["REALIZADO"]
+    # 🔒 Garantir tipos corretos ANTES de salvar
+    df_original["REALIZADO"] = pd.to_numeric(
+        df_original["REALIZADO"], errors="coerce"
+    ).fillna(0)
+
+    df_original["ATIVIDADES / OBSERVAÇÕES"] = (
+        df_original["ATIVIDADES / OBSERVAÇÕES"]
+        .fillna("")
+        .astype(str)
+    )
+
+    # ✅ Salvar usando alinhamento de índice
+    df_original.loc[
+        df_editado.index, "REALIZADO"
+    ] = df_editado["REALIZADO"]
+
     df_original.loc[
         df_editado.index, "ATIVIDADES / OBSERVAÇÕES"
-    ] = df_editado["ATIVIDADES / OBSERVAÇÕES"]
+    ] = df_editado["ATIVIDADES / OBSERVAÇÕES"].astype(str)
 
     df_original.to_excel(arquivo, index=False)
+
     st.success("✅ Atualizações salvas com sucesso!")
+
