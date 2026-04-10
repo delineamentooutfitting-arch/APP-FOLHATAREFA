@@ -2,27 +2,47 @@ import streamlit as st
 import pandas as pd
 
 # =========================
-# CONFIGURAÇÃO
+# CONFIGURAÇÃO DA PÁGINA
 # =========================
-st.set_page_config(page_title="P84 – Processamento", layout="wide")
+st.set_page_config(
+    page_title="P84 – Processamento",
+    layout="wide"
+)
+
 st.title("📋 P84 – Registro de Avanço | PROCESSAMENTO")
 
+# =========================
+# ARQUIVO
+# =========================
 arquivo = "P84 - FOLHA TAREFA.xlsx"
 
 # =========================
-# LEITURA SEGURA DA ABA
+# LISTAR ABAS DISPONÍVEIS
 # =========================
 xls = pd.ExcelFile(arquivo)
-aba = next(
-    (s for s in xls.sheet_names if "PROCESSAMENTO" in s.upper()),
-    None,
-)
+abas = xls.sheet_names
 
-if aba is None:
-    st.error("❌ Aba de PROCESSAMENTO não encontrada.")
+st.caption(f"📄 Abas encontradas no arquivo: {abas}")
+
+# =========================
+# LOCALIZAR ABA DE PROCESSAMENTO (ROBUSTO)
+# =========================
+aba_processamento = None
+
+for aba in abas:
+    nome_limpo = aba.strip().upper()
+    if "PROCESSAMENTO" in nome_limpo:
+        aba_processamento = aba
+        break
+
+if aba_processamento is None:
+    st.error("❌ Nenhuma aba de PROCESSAMENTO encontrada no Excel.")
     st.stop()
 
-df_original = pd.read_excel(arquivo, sheet_name=aba)
+# =========================
+# LEITURA DA PLANILHA
+# =========================
+df_original = pd.read_excel(arquivo, sheet_name=aba_processamento)
 
 # =========================
 # COLUNAS BASE
@@ -99,7 +119,7 @@ st.divider()
 st.subheader("✍️ Atualizar Realizado e Observações")
 
 # =========================
-# DATA EDITOR (MOBILE-FIRST)
+# TABELA EDITÁVEL
 # =========================
 df_editado = st.data_editor(
     df_view,
@@ -125,7 +145,7 @@ df_editado = st.data_editor(
 )
 
 # =========================
-# SALVAR + RERUN ✅
+# SALVAR + RECARREGAR
 # =========================
 if st.button("💾 Salvar alterações"):
 
@@ -147,4 +167,4 @@ if st.button("💾 Salvar alterações"):
     df_original.to_excel(arquivo, index=False)
 
     st.success("✅ Atualizações salvas com sucesso!")
-    st.rerun()  # 🔥 ESSENCIAL
+    st.rerun()
