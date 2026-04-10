@@ -96,6 +96,11 @@ colunas_view = [
     "ATIVIDADES / OBSERVAÇÕES"
 ]
 
+# Recalcular RESTANTE com base no REALIZADO ATUAL (inclusive editado)
+df_filtrado["RESTANTE (%)"] = (
+    df_filtrado["PROG (%)"] - df_filtrado["REALIZADO"]
+).clip(lower=0)
+
 df_filtrado = df_filtrado[colunas_view]
 
 # =========================
