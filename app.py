@@ -12,12 +12,28 @@ st.set_page_config(
 st.title("📋 P84 – Registro de Avanço | PROCESSAMENTO")
 
 # =========================
-# ARQUIVO / ABA
+# ARQUIVO
 # =========================
 arquivo = "P84 - FOLHA TAREFA.xlsx"
-aba = "FOLHA TAREFA PROCESSAMENTO"
 
-df_original = pd.read_excel(arquivo, sheet_name=aba)
+# =========================
+# LEITURA SEGURA DA ABA
+# (evita erro se o nome mudar)
+# =========================
+xls = pd.ExcelFile(arquivo)
+
+# tenta achar a aba que contenha "PROCESSAMENTO"
+aba_processamento = None
+for aba in xls.sheet_names:
+    if "PROCESSAMENTO" in aba.upper():
+        aba_processamento = aba
+        break
+
+if aba_processamento is None:
+    st.error("❌ Nenhuma aba de PROCESSAMENTO encontrada no Excel.")
+    st.stop()
+
+df_original = pd.read_excel(arquivo, sheet_name=aba_processamento)
 
 # =========================
 # COLUNAS BASE DO EXCEL
@@ -51,15 +67,15 @@ df["ATIVIDADES / OBSERVAÇÕES"] = (
 )
 
 # =========================
-# COLUNAS DE EXIBIÇÃO
+# COLUNAS CALCULADAS (%)
 # =========================
 df["PROG (%)"] = df["Prog %"] * 100
-df["RESTANTE (%)"] = (df["PROG (%)"] - df["REALIZADO"]).clip(lower=0)
 
 # =========================
-# FILTRO (A–H)
+# FILTRO
 # =========================
 st.subheader("🔎 Filtro")
+
 busca = st.text_input(
     "Buscar por módulo, desenho, produto, TAG, etc."
 )
@@ -75,11 +91,14 @@ if busca:
 else:
     df_filtrado = df.copy()
 
-st.divider()
+# =========================
+# REORDENAR E RECALCULAR RESTANTE
+# (sempre depois da edição)
+# =========================
+df_filtrado["RESTANTE (%)"] = (
+    df_filtrado["PROG (%)"] - df_filtrado["REALIZADO"]
+).clip(lower=0)
 
-# =========================
-# ORDEM FINAL DAS COLUNAS
-# =========================
 colunas_view = [
     "MÓDULO",
     "DESENHO",
@@ -96,22 +115,18 @@ colunas_view = [
     "ATIVIDADES / OBSERVAÇÕES"
 ]
 
-# Recalcular RESTANTE com base no REALIZADO ATUAL (inclusive editado)
-df_filtrado["RESTANTE (%)"] = (
-    df_filtrado["PROG (%)"] - df_filtrado["REALIZADO"]
-).clip(lower=0)
-
 df_filtrado = df_filtrado[colunas_view]
+
+st.divider()
+st.subheader("✍️ Atualizar Realizado e Observações")
 
 # =========================
 # TABELA EDITÁVEL (MOBILE-FIRST)
 # =========================
-st.subheader("✍️ Atualizar Realizado e Observações")
-
 df_editado = st.data_editor(
     df_filtrado,
     use_container_width=True,
-    hide_index=True,          # 🔥 essencial no celular
+    hide_index=True,
     num_rows="fixed",
     column_config={
         "PROG (%)": st.column_config.NumberColumn(
@@ -141,11 +156,11 @@ df_editado = st.data_editor(
 )
 
 # =========================
-# SALVAR NO EXCEL (VERSÃO DEFINITIVA)
+# SALVAR (VERSÃO DEFINITIVA)
 # =========================
 if st.button("💾 Salvar alterações"):
 
-    # 🔒 Garantir tipos corretos ANTES de salvar
+    # garantir tipos corretos no original
     df_original["REALIZADO"] = pd.to_numeric(
         df_original["REALIZADO"], errors="coerce"
     ).fillna(0)
@@ -156,11 +171,8 @@ if st.button("💾 Salvar alterações"):
         .astype(str)
     )
 
-    # ✅ Salvar usando alinhamento de índice
-    df_original.loc[
-        df_editado.index, "REALIZADO"
-    ] = df_editado["REALIZADO"]
-
+    # salvar apenas colunas editáveis alinhandas por índice
+    df_original.loc[df_editado.index, "REALIZADO"] = df_editado["REALIZADO"]
     df_original.loc[
         df_editado.index, "ATIVIDADES / OBSERVAÇÕES"
     ] = df_editado["ATIVIDADES / OBSERVAÇÕES"].astype(str)
@@ -168,4 +180,3 @@ if st.button("💾 Salvar alterações"):
     df_original.to_excel(arquivo, index=False)
 
     st.success("✅ Atualizações salvas com sucesso!")
-
