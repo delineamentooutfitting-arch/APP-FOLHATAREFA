@@ -8,17 +8,14 @@ st.set_page_config(
 
 st.title("📋 P84 – Registro de Avanço | PROCESSAMENTO")
 
-# =========================
-# ARQUIVO E ABA
-# =========================
+# ===== Arquivo e aba =====
 arquivo = "P84 - FOLHA TAREFA.xlsx"
 aba = "FOLHA TAREFA PROCESSAMENTO"
 
-df = pd.read_excel(arquivo, sheet_name=aba)
+# Ler planilha
+df_original = pd.read_excel(arquivo, sheet_name=aba)
 
-# =========================
-# COLUNAS EXIBIDAS
-# =========================
+# ===== Colunas exibidas =====
 colunas_exibidas = [
     "MÓDULO",
     "DESENHO",
@@ -34,11 +31,9 @@ colunas_exibidas = [
     "ATIVIDADES / OBSERVAÇÕES"
 ]
 
-df = df[colunas_exibidas]
+df = df_original[colunas_exibidas].copy()
 
-# =========================
-# FILTRO / BUSCA (A–H)
-# =========================
+# ===== Filtro =====
 st.subheader("🔎 Filtro")
 
 busca = st.text_input(
@@ -46,22 +41,20 @@ busca = st.text_input(
 )
 
 if busca:
-    filtro = (
+    mascara = (
         df.iloc[:, 0:8]
         .astype(str)
         .apply(lambda col: col.str.contains(busca, case=False, na=False))
         .any(axis=1)
     )
-    df_filtrado = df[filtro]
+    df_filtrado = df[mascara].copy()
 else:
-    df_filtrado = df
+    df_filtrado = df.copy()
 
 st.divider()
 
-# =========================
-# TABELA EDITÁVEL
-# =========================
-st.subheader("✍️ Atualização de Progresso")
+# ===== Tabela editável =====
+st.subheader("✍️ Atualizar Realizado e Observações")
 
 df_editado = st.data_editor(
     df_filtrado,
@@ -84,14 +77,13 @@ df_editado = st.data_editor(
     ]
 )
 
-# =========================
-# SALVAR
-# =========================
+# ===== Salvar =====
 if st.button("💾 Salvar alterações"):
     for idx in df_editado.index:
-        df.loc[idx, "REALIZADO"] = df_editado.loc[idx, "REALIZADO"]
-        df.loc[idx, "ATIVIDADES / OBSERVAÇÕES"] = df_editado.loc[idx, "ATIVIDADES / OBSERVAÇÕES"]
+        df_original.loc[idx, "REALIZADO"] = df_editado.loc[idx, "REALIZADO"]
+        df_original.loc[idx, "ATIVIDADES / OBSERVAÇÕES"] = df_editado.loc[idx, "ATIVIDADES / OBSERVAÇÕES"]
 
-    df.to_excel(arquivo, index=False)
+    df_original.to_excel(arquivo, index=False)
+
     st.success("✅ Atualizações salvas com sucesso!")
 ``
