@@ -136,14 +136,14 @@ df_editado = st.data_editor(
 )
 
 # =========================
-# SALVAR NO EXCEL
+# SALVAR NO EXCEL (CORRETO)
 # =========================
 if st.button("💾 Salvar alterações"):
-    for idx in df_editado.index:
-        df_original.loc[idx, "REALIZADO"] = df_editado.loc[idx, "REALIZADO"]
-        df_original.loc[idx, "ATIVIDADES / OBSERVAÇÕES"] = df_editado.loc[
-            idx, "ATIVIDADES / OBSERVAÇÕES"
-        ]
+
+    df_original.loc[df_editado.index, "REALIZADO"] = df_editado["REALIZADO"]
+    df_original.loc[
+        df_editado.index, "ATIVIDADES / OBSERVAÇÕES"
+    ] = df_editado["ATIVIDADES / OBSERVAÇÕES"]
 
     df_original.to_excel(arquivo, index=False)
     st.success("✅ Atualizações salvas com sucesso!")
