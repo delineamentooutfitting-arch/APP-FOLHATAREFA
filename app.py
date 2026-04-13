@@ -17,6 +17,7 @@ st.title("📋 P84 – Registro de Avanço | PROCESSAMENTO")
 arquivo = "P84 - FOLHA TAREFA.xlsx"
 aba = "FOLHA TAREFA PROCESSAMENTO"
 
+# ✅ Leitura segura da aba
 df_original = pd.read_excel(arquivo, sheet_name=aba)
 
 # =========================
@@ -98,7 +99,7 @@ st.divider()
 st.subheader("✍️ Atualizar Realizado e Observações")
 
 # =========================
-# TABELA EDITÁVEL (MOBILE)
+# TABELA EDITÁVEL
 # =========================
 df_editado = st.data_editor(
     df_view,
@@ -106,21 +107,22 @@ df_editado = st.data_editor(
     hide_index=True,
     num_rows="fixed",
     column_config={
-        "PROG (%)": st.column_config.NumberColumn("Prog %", format="%.0f%%"),
+        "PROG (%)": st.column_config.NumberColumn(
+            "Prog %",
+            format="%.0f%%"
+        ),
         "REALIZADO": st.column_config.NumberColumn(
             "REALIZADO (%)",
             min_value=0,
             max_value=100,
-            step=5,
-            help="Toque para editar"
+            step=5
         ),
         "RESTANTE (%)": st.column_config.NumberColumn(
             "RESTANTE (%)",
             format="%.0f%%"
         ),
         "ATIVIDADES / OBSERVAÇÕES": st.column_config.TextColumn(
-            "OBSERVAÇÕES",
-            help="Toque para editar"
+            "OBSERVAÇÕES"
         ),
     },
     disabled=[
@@ -130,7 +132,7 @@ df_editado = st.data_editor(
 )
 
 # =========================
-# SALVAR + RECARREGAR
+# SALVAR + RECARREGAR (✅ CORRIGIDO)
 # =========================
 if st.button("💾 Salvar alterações"):
 
@@ -144,13 +146,20 @@ if st.button("💾 Salvar alterações"):
         .astype(str)
     )
 
-    df_original.loc[df_editado.index, "REALIZADO"] = df_editado["REALIZADO"]
+    df_original.loc[df_editado.index, "REALIZADO"] = (
+        df_editado["REALIZADO"]
+    )
     df_original.loc[
         df_editado.index, "ATIVIDADES / OBSERVAÇÕES"
     ] = df_editado["ATIVIDADES / OBSERVAÇÕES"]
 
-    df_original.to_excel(arquivo, index=False)
+    # ✅ SALVA PRESERVANDO O NOME DA ABA
+    with pd.ExcelWriter(arquivo, engine="openpyxl") as writer:
+        df_original.to_excel(
+            writer,
+            index=False,
+            sheet_name=aba
+        )
 
     st.success("✅ Atualizações salvas com sucesso!")
     st.rerun()
- 
